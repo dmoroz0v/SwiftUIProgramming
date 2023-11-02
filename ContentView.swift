@@ -1,52 +1,31 @@
 import SwiftUI
-
-struct SquareView<Content>: View where Content: View {
-    var content: () -> Content
-    init(content: @escaping () -> Content) {
-        self.content = content
-    }
-    var body: some View {
-        ZStack {
-            content()
-        }
-        .contentShape(Rectangle())
-        .frame(
-            maxWidth: .infinity,
-            maxHeight: .infinity
-        )
-        .aspectRatio(1, contentMode: .fit)
-    }
-}
-
-struct ButtonView: View {
-    let title: String
-    let action: () -> Void
-    init(_ title: String, action: @escaping () -> Void) {
-        self.title = title
-        self.action = action
-    }
-    var body: some View {
-        Button {
-            action()
-        } label: {
-            Text(title)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .padding(.horizontal, 16)
-    }
-}
+import PhotosUI
 
 struct ContentView: View {
+    @State private var photoItem: PhotosPickerItem? = nil
+    @State private var photo: UIImage? = nil
     var body: some View {
         VStack {
             HStack(spacing: 0) {
                 SquareView() {
-                    Image("image")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .padding(.horizontal, 16)
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        if let photo {
+                            Image(uiImage: photo)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            Text("Select Image")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .onChange(of: photoItem) { _ in
+                        Task {
+                            if let data = try? await photoItem?.loadTransferable(type: Data.self) {
+                                photo = UIImage(data: data)
+                            }
+                        }
+                    }
+
                 }
                 SquareView() {
                     VStack {
@@ -60,6 +39,7 @@ struct ContentView: View {
                             print("3")
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
             }
             Spacer()

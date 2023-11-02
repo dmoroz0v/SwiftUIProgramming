@@ -10,7 +10,7 @@ import AppleProductTypes
 let package = Package(
     name: "SwiftUIProgramming",
     platforms: [
-        .iOS("15.2")
+        .iOS("16.0")
     ],
     products: [
         .iOSApplication(
