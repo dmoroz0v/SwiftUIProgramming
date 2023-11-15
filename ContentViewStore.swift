@@ -30,10 +30,17 @@ class ContentViewStore: ObservableObject {
     }
 
     func rotate() {
-        guard let photo, let img = CIImage(image: photo) else {
+        guard let photo else {
             return
         }
-        self.photo = UIImage(ciImage: img.oriented(.right))
+
+        self.photo = UIGraphicsImageRenderer(
+            size: .init(width: photo.size.height, height: photo.size.width)
+        ).image { context in
+            context.cgContext.translateBy(x: photo.size.height, y: 0)
+            context.cgContext.rotate(by: .pi/2)
+            photo.draw(at: .zero)
+        }
     }
 
     private func updateState() {
