@@ -1,36 +1,33 @@
 import SwiftUI
 import PhotosUI
+import Combine
 
 struct ContentView: View {
-    @State private var photoItem: PhotosPickerItem? = nil
-    @State private var photo: UIImage? = nil
+
+    @ObservedObject var store = ContentViewStore()
+
     var body: some View {
         VStack {
-            HStack(spacing: 0) {
+            HStack(spacing: 16) {
                 SquareView() {
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        if let photo {
+                    PhotosPicker(selection: $store.photoItem, matching: .images) {
+                        if let photo = store.state.photo {
                             Image(uiImage: photo)
                                 .resizable()
                                 .scaledToFill()
                         } else {
                             Text("Select Image")
+                                .frame(
+                                    maxWidth: .infinity,
+                                    maxHeight: .infinity
+                                )
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .onChange(of: photoItem) { _ in
-                        Task {
-                            if let data = try? await photoItem?.loadTransferable(type: Data.self) {
-                                photo = UIImage(data: data)
-                            }
-                        }
-                    }
-
                 }
                 SquareView() {
                     VStack {
                         ButtonView("Rotate") {
-                            print("1")
+                            store.rotate()
                         }
                         ButtonView("Invert Colors") {
                             print("2")
@@ -39,9 +36,9 @@ struct ContentView: View {
                             print("3")
                         }
                     }
-                    .padding(.horizontal, 16)
                 }
             }
+            .padding(.horizontal, 16)
             Spacer()
         }
     }

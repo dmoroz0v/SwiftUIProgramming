@@ -14,14 +14,16 @@ struct SquareView<Content>: View where Content: View {
         self.content = content
     }
     var body: some View {
-        ZStack {
-            content()
-        }
-        .contentShape(Rectangle())
-        .frame(
-            maxWidth: .infinity,
-            maxHeight: .infinity
-        )
-        .aspectRatio(1, contentMode: .fit)
+        Rectangle()
+            .foregroundColor(.clear)
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity
+            )
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                content()
+            }
+            .clipped()
     }
 }
