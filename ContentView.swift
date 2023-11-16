@@ -11,7 +11,7 @@ struct ContentView: View {
             HStack(spacing: 16) {
                 SquareView() {
                     PhotosPicker(selection: $store.photoItem, matching: .images) {
-                        if let photo = store.state.photo {
+                        if let photo = store.state.selectedPhoto {
                             Image(uiImage: photo)
                                 .resizable()
                                 .scaledToFill()
@@ -39,7 +39,19 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal, 16)
-            Spacer()
+
+            ScrollView {
+                VStack {
+                    ForEach(store.state.transformedPhotos, id: \.offset) { offset, image in
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    }
+                    .frame(height: 100)
+                    .padding(.horizontal)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 }

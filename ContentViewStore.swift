@@ -4,25 +4,28 @@ import UIKit
 import SwiftUI
 import PhotosUI
 
+@MainActor
 class ContentViewStore: ObservableObject {
-    @Published var photoItem: PhotosPickerItem? = nil
 
+    struct Model {
+        var selectedPhoto: UIImage?
+        var transformedPhotos: [UIImage] = []
+    }
+
+    @Published var photoItem: PhotosPickerItem? = nil
     @Published var state: ContentViewState = ContentViewState()
 
-    private var photo: UIImage? = nil {
-        didSet {
-            updateState()
-        }
+    private var model: Model = Model() {
+        didSet { updateState() }
     }
+
     private var cancelables: Set<AnyCancellable> = []
 
     init() {
         $photoItem.sink { photoItem in
             Task {
                 if let data = try? await photoItem?.loadTransferable(type: Data.self) {
-                    await MainActor.run {
-                        self.photo = UIImage(data: data)
-                    }
+                    self.model.selectedPhoto = UIImage(data: data)
                 }
             }
         }
@@ -30,20 +33,21 @@ class ContentViewStore: ObservableObject {
     }
 
     func rotate() {
-        guard let photo else {
-            return
-        }
-
-        self.photo = UIGraphicsImageRenderer(
+        guard let photo = model.selectedPhoto else { return }
+        let rotated = UIGraphicsImageRenderer(
             size: .init(width: photo.size.height, height: photo.size.width)
         ).image { context in
             context.cgContext.translateBy(x: photo.size.height, y: 0)
             context.cgContext.rotate(by: .pi/2)
             photo.draw(at: .zero)
         }
+        self.model.transformedPhotos.append(rotated)
     }
 
     private func updateState() {
-        state = .init(photo: photo)
+        state = .init(
+            selectedPhoto: model.selectedPhoto,
+            transformedPhotos: model.transformedPhotos.enumerated().reversed()
+        )
     }
 }

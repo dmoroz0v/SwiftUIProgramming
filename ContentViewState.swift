@@ -2,5 +2,6 @@ import Foundation
 import UIKit
 
 struct ContentViewState {
-    var photo: UIImage?
+    var selectedPhoto: UIImage?
+    var transformedPhotos: [(offset: Int, element: UIImage)] = []
 }
