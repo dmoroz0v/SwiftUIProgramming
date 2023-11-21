@@ -42,10 +42,15 @@ struct ContentView: View {
 
             ScrollView {
                 VStack {
-                    ForEach(store.state.transformedPhotos, id: \.offset) { offset, image in
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
+                    ForEach(store.state.transformedPhotos) { photo in
+                        switch photo.content {
+                        case let .image(image):
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                        case .processing:
+                            ProgressView()
+                        }
                     }
                     .frame(height: 100)
                     .padding(.horizontal)
