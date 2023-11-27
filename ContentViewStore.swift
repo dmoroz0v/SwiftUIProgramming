@@ -24,6 +24,7 @@ class ContentViewStore: ObservableObject {
         didSet { updateState() }
     }
 
+    private let imageProcessor = ImageProccessor()
     private var cancelables: Set<AnyCancellable> = []
 
     init() {
@@ -37,18 +38,38 @@ class ContentViewStore: ObservableObject {
         .store(in: &cancelables)
     }
 
+    func updateSelectedPhoto(at index: Int) {
+        if case let .image(original, _) = model.transformedPhotos[index] {
+            model.selectedPhoto = original
+        }
+    }
+
     func rotate() {
         guard let photo = model.selectedPhoto else { return }
         let index = model.transformedPhotos.endIndex
         model.transformedPhotos.append(.processing)
 
         Task {
-            let processor = ImageProccessor()
-            let rotated = try await processor.rotate(photo)
-            let thumnail = try await processor.generateThumbnail(rotated)
+            let rotated = try await self.imageProcessor.rotate(photo)
+            let thumbnail = try await self.imageProcessor.generateThumbnail(rotated)
             self.model.transformedPhotos[index] = .image(
                 original: rotated,
-                thumbnail: thumnail
+                thumbnail: thumbnail
+            )
+        }
+    }
+
+    func invertColors() {
+        guard let photo = model.selectedPhoto else { return }
+        let index = model.transformedPhotos.endIndex
+        model.transformedPhotos.append(.processing)
+
+        Task {
+            let invertedImage = try await self.imageProcessor.invertColors(photo)
+            let thumbnail = try await self.imageProcessor.generateThumbnail(invertedImage)
+            self.model.transformedPhotos[index] = .image(
+                original: invertedImage,
+                thumbnail: thumbnail
             )
         }
     }

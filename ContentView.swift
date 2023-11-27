@@ -6,6 +6,8 @@ struct ContentView: View {
 
     @ObservedObject var store = ContentViewStore()
 
+    @State private var isActionSheetPresented: Bool = false
+
     var body: some View {
         VStack {
             HStack(spacing: 16) {
@@ -30,7 +32,7 @@ struct ContentView: View {
                             store.rotate()
                         }
                         ButtonView("Invert Colors") {
-                            print("2")
+                            store.invertColors()
                         }
                         ButtonView("Mirror") {
                             print("3")
@@ -48,6 +50,24 @@ struct ContentView: View {
                             Image(uiImage: image)
                                 .resizable()
                                 .scaledToFit()
+                                .onTapGesture {
+                                    isActionSheetPresented = true
+                                }
+                                .confirmationDialog(
+                                    "Action on the image",
+                                    isPresented: $isActionSheetPresented
+                                ) {
+                                    Button {
+                                        store.updateSelectedPhoto(at: photo.id)
+                                    } label: {
+                                        Text("Transform")
+                                    }
+                                    Button("Cancel", role: .cancel) {
+                                        isActionSheetPresented = false
+                                    }
+                                } message: {
+                                    Text("What to do with the image?")
+                                }
                         case .processing:
                             ProgressView()
                         }
