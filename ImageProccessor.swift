@@ -3,8 +3,11 @@ import UIKit
 
 final class ImageProccessor {
 
-    func rotate(_ image: UIImage) async throws -> UIImage {
-        try await Task.sleep(nanoseconds: UInt64.random(in: 1..<3) * 1_000_000_000)
+    func rotate(
+        _ image: UIImage,
+        progressClosure: ((Double) -> Void)
+    ) async throws -> UIImage {
+        try await simulateLoading(progressClosure: progressClosure)
         let format = UIGraphicsImageRendererFormat(for: UITraitCollection(displayScale: 1))
         return UIGraphicsImageRenderer(
             size: .init(width: image.size.height, height: image.size.width),
@@ -16,8 +19,11 @@ final class ImageProccessor {
         }
     }
 
-    func invertColors(_ image: UIImage) async throws -> UIImage {
-        try await Task.sleep(nanoseconds: UInt64.random(in: 1..<3) * 1_000_000_000)
+    func invertColors(
+        _ image: UIImage,
+        progressClosure: ((Double) -> Void)
+    ) async throws -> UIImage {
+        try await simulateLoading(progressClosure: progressClosure)
         let beginImage = CIImage(image: image)
 
         if let filter = CIFilter(name: "CIColorInvert") {
@@ -48,6 +54,15 @@ final class ImageProccessor {
             UIBezierPath(roundedRect: imgRect, cornerRadius: 12).addClip()
             image.draw(in: imgRect)
         }
+    }
+
+    private func simulateLoading(progressClosure: ((Double) -> Void)) async throws {
+        let secondsToSleep = UInt64.random(in: 200..<1000)
+        for i in 0..<secondsToSleep {
+            try await Task.sleep(nanoseconds: 10000000)
+            progressClosure(Double(i) / Double(secondsToSleep))
+        }
+        try await Task.sleep(nanoseconds: 100_000_000)
     }
 
 }

@@ -9,7 +9,7 @@ class ContentViewStore: ObservableObject {
 
     struct Model {
         enum TransformedPhoto {
-            case processing
+            case processing(percent: Double)
             case image(original: UIImage, thumbnail: UIImage)
         }
 
@@ -47,10 +47,14 @@ class ContentViewStore: ObservableObject {
     func rotate() {
         guard let photo = model.selectedPhoto else { return }
         let index = model.transformedPhotos.endIndex
-        model.transformedPhotos.append(.processing)
+        model.transformedPhotos.append(.processing(percent: 0))
 
         Task {
-            let rotated = try await self.imageProcessor.rotate(photo)
+            let rotated = try await self.imageProcessor.rotate(photo) { percent in
+                Task { @MainActor in
+                    model.transformedPhotos[index] = .processing(percent: percent)
+                }
+            }
             let thumbnail = try await self.imageProcessor.generateThumbnail(rotated)
             self.model.transformedPhotos[index] = .image(
                 original: rotated,
@@ -62,10 +66,14 @@ class ContentViewStore: ObservableObject {
     func invertColors() {
         guard let photo = model.selectedPhoto else { return }
         let index = model.transformedPhotos.endIndex
-        model.transformedPhotos.append(.processing)
+        model.transformedPhotos.append(.processing(percent: 0))
 
         Task {
-            let invertedImage = try await self.imageProcessor.invertColors(photo)
+            let invertedImage = try await self.imageProcessor.invertColors(photo) { percent in
+                Task { @MainActor in
+                    model.transformedPhotos[index] = .processing(percent: percent)
+                }
+            }
             let thumbnail = try await self.imageProcessor.generateThumbnail(invertedImage)
             self.model.transformedPhotos[index] = .image(
                 original: invertedImage,
@@ -82,8 +90,8 @@ class ContentViewStore: ObservableObject {
                 switch item {
                 case let .image(_, thumbnail):
                     photo = .image(thumbnail)
-                case .processing:
-                    photo = .processing
+                case .processing(let percent):
+                    photo = .processing(percent)
                 }
                 return ContentViewState.TransformedPhoto(
                     content: photo,

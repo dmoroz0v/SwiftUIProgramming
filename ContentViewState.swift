@@ -4,7 +4,7 @@ import UIKit
 struct ContentViewState {
     struct TransformedPhoto: Identifiable, Hashable {
         enum Content: Hashable {
-            case processing
+            case processing(Double)
             case image(UIImage)
         }
         let content: Content

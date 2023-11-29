@@ -6,8 +6,6 @@ struct ContentView: View {
 
     @ObservedObject var store = ContentViewStore()
 
-    @State private var isActionSheetPresented: Bool = false
-
     var body: some View {
         VStack {
             HStack(spacing: 16) {
@@ -45,31 +43,8 @@ struct ContentView: View {
             ScrollView {
                 VStack {
                     ForEach(store.state.transformedPhotos) { photo in
-                        switch photo.content {
-                        case let .image(image):
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .onTapGesture {
-                                    isActionSheetPresented = true
-                                }
-                                .confirmationDialog(
-                                    "Action on the image",
-                                    isPresented: $isActionSheetPresented
-                                ) {
-                                    Button {
-                                        store.updateSelectedPhoto(at: photo.id)
-                                    } label: {
-                                        Text("Transform")
-                                    }
-                                    Button("Cancel", role: .cancel) {
-                                        isActionSheetPresented = false
-                                    }
-                                } message: {
-                                    Text("What to do with the image?")
-                                }
-                        case .processing:
-                            ProgressView()
+                        TransformedImagePreview(photo: photo) { id in
+                            store.updateSelectedPhoto(at: id)
                         }
                     }
                     .frame(height: 100)
@@ -78,5 +53,47 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+    }
+
+}
+
+struct TransformedImagePreview: View {
+
+    @State var isPresenting: Bool = false
+
+    let photo: ContentViewState.TransformedPhoto
+    let onPhotoSelectAction: ((Int) -> Void)
+
+    var body: some View {
+        switch photo.content {
+        case let .image(image):
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .onTapGesture {
+                    isPresenting = true
+                }
+                .confirmationDialog(
+                    "Action on the image",
+                    isPresented: $isPresenting,
+                    presenting: photo
+                ) { photo in
+                    Button {
+                        onPhotoSelectAction(photo.id)
+                    } label: {
+                        Text("Transform")
+                    }
+                    Button("Cancel", role: .cancel) {
+                       isPresenting = false
+                    }
+                } message: { _ in
+                    Text("What to do with the image?")
+                }
+        case .processing(let percent):
+            HStack {
+                ProgressView(value: percent)
+            }
+        }
+
     }
 }
