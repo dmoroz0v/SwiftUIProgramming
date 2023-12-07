@@ -6,13 +6,14 @@ struct MyApp: App {
     @State var model: ContentViewStore.Model? = nil
     var body: some Scene {
         WindowGroup {
-            if let model {
-                ContentView(store: ContentViewStore(
-                    model: model,
-                    storage: storage
-                ))
-            } else {
-                ProgressView()
+            ZStack {
+                if let model {
+                    ContentView(store: ContentViewStore(
+                        model: model,
+                        storage: storage
+                    ))
+                }
+                SplashScreen()
                     .onAppear {
                         Task {
                             let selectedPhoto = await storage.getSelectedPhoto()
