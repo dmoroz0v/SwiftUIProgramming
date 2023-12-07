@@ -4,7 +4,7 @@ import Combine
 
 struct ContentView: View {
 
-    @ObservedObject var store = ContentViewStore()
+    @ObservedObject var store: ContentViewStore
 
     var body: some View {
         VStack {
@@ -55,6 +55,9 @@ struct ContentView: View {
         }
     }
 
+    init(store: ContentViewStore) {
+        self.store = store
+    }
 }
 
 struct TransformedImagePreview: View {

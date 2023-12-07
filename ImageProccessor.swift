@@ -5,7 +5,7 @@ final class ImageProccessor {
 
     func rotate(
         _ image: UIImage,
-        progressClosure: ((Double) -> Void)
+        progressClosure: (@Sendable (Double) async -> Void)
     ) async throws -> UIImage {
         try await simulateLoading(progressClosure: progressClosure)
         let format = UIGraphicsImageRendererFormat(for: UITraitCollection(displayScale: 1))
@@ -21,7 +21,7 @@ final class ImageProccessor {
 
     func invertColors(
         _ image: UIImage,
-        progressClosure: ((Double) -> Void)
+        progressClosure: (@Sendable (Double) async -> Void)
     ) async throws -> UIImage {
         try await simulateLoading(progressClosure: progressClosure)
         let beginImage = CIImage(image: image)
@@ -56,11 +56,11 @@ final class ImageProccessor {
         }
     }
 
-    private func simulateLoading(progressClosure: ((Double) -> Void)) async throws {
+    private func simulateLoading(progressClosure: (@Sendable (Double) async -> Void)) async throws {
         let secondsToSleep = UInt64.random(in: 200..<1000)
         for i in 0..<secondsToSleep {
             try await Task.sleep(nanoseconds: 10000000)
-            progressClosure(Double(i) / Double(secondsToSleep))
+            await progressClosure(Double(i) / Double(secondsToSleep))
         }
         try await Task.sleep(nanoseconds: 100_000_000)
     }

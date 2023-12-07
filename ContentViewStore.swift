@@ -7,6 +7,8 @@ import PhotosUI
 @MainActor
 class ContentViewStore: ObservableObject {
 
+    let storage: Storage
+
     struct Model {
         enum TransformedPhoto {
             case processing(percent: Double)
@@ -20,27 +22,40 @@ class ContentViewStore: ObservableObject {
     @Published var photoItem: PhotosPickerItem? = nil
     @Published var state: ContentViewState = ContentViewState()
 
-    private var model: Model = Model() {
-        didSet { updateState() }
+    private var model: Model {
+        didSet {
+            updateState()
+        }
     }
 
     private let imageProcessor = ImageProccessor()
     private var cancelables: Set<AnyCancellable> = []
 
-    init() {
+    init(model: Model, storage: Storage) {
+        self.model = model
+        self.storage = storage
         $photoItem.sink { photoItem in
             Task {
                 if let data = try? await photoItem?.loadTransferable(type: Data.self) {
                     self.model.selectedPhoto = UIImage(data: data)
+                    do {
+                        try await self.storage.save(selectedPhoto: self.model.selectedPhoto)
+                    } catch {
+                        print(error)
+                    }
                 }
             }
         }
         .store(in: &cancelables)
+        updateState()
     }
 
     func updateSelectedPhoto(at index: Int) {
         if case let .image(original, _) = model.transformedPhotos[index] {
             model.selectedPhoto = original
+            Task {
+                try await self.storage.save(selectedPhoto: self.model.selectedPhoto)
+            }
         }
     }
 
@@ -50,10 +65,10 @@ class ContentViewStore: ObservableObject {
         model.transformedPhotos.append(.processing(percent: 0))
 
         Task {
-            let rotated = try await self.imageProcessor.rotate(photo) { percent in
-                Task { @MainActor in
-                    model.transformedPhotos[index] = .processing(percent: percent)
-                }
+            let rotated = try await self.imageProcessor.rotate(photo) { @MainActor percent in
+                var model = self.model
+                model.transformedPhotos[index] = .processing(percent: percent)
+                self.model = model
             }
             let thumbnail = try await self.imageProcessor.generateThumbnail(rotated)
             self.model.transformedPhotos[index] = .image(
@@ -69,10 +84,10 @@ class ContentViewStore: ObservableObject {
         model.transformedPhotos.append(.processing(percent: 0))
 
         Task {
-            let invertedImage = try await self.imageProcessor.invertColors(photo) { percent in
-                Task { @MainActor in
-                    model.transformedPhotos[index] = .processing(percent: percent)
-                }
+            let invertedImage = try await self.imageProcessor.invertColors(photo) { @MainActor percent in
+                var model = self.model
+                model.transformedPhotos[index] = .processing(percent: percent)
+                self.model = model
             }
             let thumbnail = try await self.imageProcessor.generateThumbnail(invertedImage)
             self.model.transformedPhotos[index] = .image(
