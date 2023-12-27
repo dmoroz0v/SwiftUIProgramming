@@ -12,7 +12,7 @@ class ContentViewStore: ObservableObject {
     struct Model {
         enum TransformedPhoto {
             case processing(percent: Double)
-            case image(original: UIImage, thumbnail: UIImage)
+            case image(original: UIImage, thumbnail: UIImage, uuid: UUID)
         }
 
         var selectedPhoto: UIImage?
@@ -25,6 +25,9 @@ class ContentViewStore: ObservableObject {
     private var model: Model {
         didSet {
             updateState()
+            Task {
+                try await self.storage.save(photos: model.transformedPhotos)
+            }
         }
     }
 
@@ -51,7 +54,7 @@ class ContentViewStore: ObservableObject {
     }
 
     func updateSelectedPhoto(at index: Int) {
-        if case let .image(original, _) = model.transformedPhotos[index] {
+        if case let .image(original, _, _) = model.transformedPhotos[index] {
             model.selectedPhoto = original
             Task {
                 try await self.storage.save(selectedPhoto: self.model.selectedPhoto)
@@ -73,7 +76,8 @@ class ContentViewStore: ObservableObject {
             let thumbnail = try await self.imageProcessor.generateThumbnail(rotated)
             self.model.transformedPhotos[index] = .image(
                 original: rotated,
-                thumbnail: thumbnail
+                thumbnail: thumbnail,
+                uuid: UUID()
             )
         }
     }
@@ -92,7 +96,8 @@ class ContentViewStore: ObservableObject {
             let thumbnail = try await self.imageProcessor.generateThumbnail(invertedImage)
             self.model.transformedPhotos[index] = .image(
                 original: invertedImage,
-                thumbnail: thumbnail
+                thumbnail: thumbnail,
+                uuid: UUID()
             )
         }
     }
@@ -103,7 +108,7 @@ class ContentViewStore: ObservableObject {
             transformedPhotos: model.transformedPhotos.enumerated().map { index, item in
                 let photo: ContentViewState.TransformedPhoto.Content
                 switch item {
-                case let .image(_, thumbnail):
+                case let .image(_, thumbnail, _):
                     photo = .image(thumbnail)
                 case .processing(let percent):
                     photo = .processing(percent)

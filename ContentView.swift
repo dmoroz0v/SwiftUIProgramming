@@ -6,8 +6,14 @@ struct ContentView: View {
 
     @ObservedObject var store: ContentViewStore
 
+    enum NavPathItem: Hashable {
+        case details(Int)
+    }
+
+    @State private var navPath: [NavPathItem] = []
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             VStack {
                 HStack(spacing: 16) {
                     SquareView() {
@@ -43,8 +49,8 @@ struct ContentView: View {
 
                 ScrollView {
                     VStack {
-                        ForEach(Array(store.state.transformedPhotos.enumerated()), id: \.element.id) { index, photo in
-                            TransformedImagePreview(store: store, index: index) { id in
+                        ForEach(store.state.transformedPhotos) { photo in
+                            TransformedImagePreview(photo: photo) { id in
                                 store.updateSelectedPhoto(at: id)
                             }
                         }
@@ -52,6 +58,14 @@ struct ContentView: View {
                         .padding(.horizontal)
                     }
                     .frame(maxWidth: .infinity)
+                }
+            }
+            .navigationDestination(for: NavPathItem.self) { pathItem in
+                switch pathItem {
+                case .details(let photoId):
+                    DetailsView(store: store, photoId: photoId) {
+                        navPath.removeAll()
+                    }
                 }
             }
         }
@@ -66,12 +80,11 @@ struct TransformedImagePreview: View {
 
     @State var isPresenting: Bool = false
 
-    @ObservedObject var store: ContentViewStore
-    let index: Int
+    let photo: ContentViewState.TransformedPhoto
     let onPhotoSelectAction: ((Int) -> Void)
 
     var body: some View {
-        switch store.state.transformedPhotos[index].content {
+        switch photo.content {
         case let .image(image):
             Image(uiImage: image)
                 .resizable()
@@ -82,16 +95,14 @@ struct TransformedImagePreview: View {
                 .confirmationDialog(
                     "Action on the image",
                     isPresented: $isPresenting,
-                    presenting: store.state.transformedPhotos[index]
+                    presenting: photo
                 ) { photo in
                     Button {
                         onPhotoSelectAction(photo.id)
                     } label: {
                         Text("Transform")
                     }
-                    NavigationLink {
-                        DetailsView(store: store, index: index)
-                    } label: {
+                    NavigationLink(value: ContentView.NavPathItem.details(photo.id)) {
                         Text("View")
                     }
                     Button("Cancel", role: .cancel) {
@@ -110,11 +121,9 @@ struct TransformedImagePreview: View {
             .confirmationDialog(
                 "Action on the image",
                 isPresented: $isPresenting,
-                presenting: store.state.transformedPhotos[index]
+                presenting: photo
             ) { photo in
-                NavigationLink {
-                    DetailsView(store: store, index: index)
-                } label: {
+                NavigationLink(value: ContentView.NavPathItem.details(photo.id)) {
                     Text("View")
                 }
                 Button("Cancel", role: .cancel) {

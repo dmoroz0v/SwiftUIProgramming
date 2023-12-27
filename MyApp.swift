@@ -23,9 +23,10 @@ struct MyApp: App {
                                 yOffset = -proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom
                                 Task {
                                     let selectedPhoto = await storage.getSelectedPhoto()
+                                    let transformedPhotos = await storage.getPhotos()
                                     self.model = .init(
                                         selectedPhoto: selectedPhoto,
-                                        transformedPhotos: []
+                                        transformedPhotos: transformedPhotos
                                     )
                                 }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.75) {
