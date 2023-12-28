@@ -37,6 +37,9 @@ struct MyApp: App {
                     }
                 }
             }
+            .onOpenURL { url in
+                <#code#>
+            }
         }
     }
 }
