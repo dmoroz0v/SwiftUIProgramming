@@ -2,15 +2,15 @@ import SwiftUI
 import PhotosUI
 import Combine
 
+enum NavPathItem: Hashable {
+    case details(Int)
+}
+
 struct ContentView: View {
 
     @ObservedObject var store: ContentViewStore
 
-    enum NavPathItem: Hashable {
-        case details(Int)
-    }
-
-    @State private var navPath: [NavPathItem] = []
+    @Binding var navPath: [NavPathItem]
 
     var body: some View {
         NavigationStack(path: $navPath) {
@@ -71,9 +71,9 @@ struct ContentView: View {
         }
     }
 
-    init(store: ContentViewStore) {
-        self.store = store
-    }
+//    init(store: ContentViewStore) {
+//        self.store = store
+//    }
 }
 
 struct TransformedImagePreview: View {

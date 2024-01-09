@@ -6,15 +6,19 @@ struct MyApp: App {
     @State var model: ContentViewStore.Model? = nil
     @State var yOffset: CGFloat = 0.0
     @State var isSplashScreenExists: Bool = true
+    @State var navPath: [NavPathItem] = []
     var body: some Scene {
         WindowGroup {
             GeometryReader { proxy in
                 ZStack {
                     if let model {
-                        ContentView(store: ContentViewStore(
-                            model: model,
-                            storage: storage
-                        ))
+                        ContentView(
+                            store: ContentViewStore(
+                                model: model,
+                                storage: storage
+                            ),
+                            navPath: $navPath
+                        )
                     }
                     if isSplashScreenExists {
                         SplashScreen()
@@ -38,7 +42,7 @@ struct MyApp: App {
                 }
             }
             .onOpenURL { url in
-                <#code#>
+
             }
         }
     }
