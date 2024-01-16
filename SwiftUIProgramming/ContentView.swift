@@ -2,18 +2,20 @@ import SwiftUI
 import PhotosUI
 import Combine
 
-enum NavPathItem: Hashable {
-    case details(Int)
-}
-
 struct ContentView: View {
 
     @ObservedObject var store: ContentViewStore
+    let deeplinkPhotoID: UUID?
 
-    @Binding var navPath: [NavPathItem]
+    enum NavPathItem: Hashable {
+        case details(UUID)
+    }
+
+    @State var navPath: [NavPathItem] = []
 
     var body: some View {
         NavigationStack(path: $navPath) {
+            let _ = Self._printChanges()
             VStack {
                 HStack(spacing: 16) {
                     SquareView() {
@@ -51,7 +53,7 @@ struct ContentView: View {
                     VStack {
                         ForEach(store.state.transformedPhotos) { photo in
                             TransformedImagePreview(photo: photo) { id in
-                                store.updateSelectedPhoto(at: id)
+                                store.updateSelectedPhoto(with: id)
                             }
                         }
                         .frame(height: 100)
@@ -68,12 +70,23 @@ struct ContentView: View {
                     }
                 }
             }
+            .onAppear {
+                print("onAppear")
+                if let deeplinkPhotoID {
+                    self.navPath.append(ContentView.NavPathItem.details(deeplinkPhotoID))
+                }
+            }
         }
     }
 
-//    init(store: ContentViewStore) {
-//        self.store = store
-//    }
+    init(
+        store: ContentViewStore,
+        deeplinkingPhotoID: UUID?
+    ){
+        self.store = store
+        self.deeplinkPhotoID = deeplinkingPhotoID
+    }
+
 }
 
 struct TransformedImagePreview: View {
@@ -81,7 +94,7 @@ struct TransformedImagePreview: View {
     @State var isPresenting: Bool = false
 
     let photo: ContentViewState.TransformedPhoto
-    let onPhotoSelectAction: ((Int) -> Void)
+    let onPhotoSelectAction: ((UUID) -> Void)
 
     var body: some View {
         switch photo.content {

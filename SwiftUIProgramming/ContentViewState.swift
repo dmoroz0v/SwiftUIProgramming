@@ -8,7 +8,7 @@ struct ContentViewState {
             case image(UIImage)
         }
         let content: Content
-        let id: Int
+        let id: UUID
     }
 
     var selectedPhoto: UIImage?

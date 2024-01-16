@@ -11,8 +11,17 @@ class ContentViewStore: ObservableObject {
 
     struct Model {
         enum TransformedPhoto {
-            case processing(percent: Double)
+            case processing(percent: Double, uuid: UUID)
             case image(original: UIImage, thumbnail: UIImage, uuid: UUID)
+
+            var uuid: UUID {
+                switch self {
+                case .processing(_, let uuid):
+                    return uuid
+                case .image(_, _, let uuid):
+                    return uuid
+                }
+            }
         }
 
         var selectedPhoto: UIImage?
@@ -53,8 +62,8 @@ class ContentViewStore: ObservableObject {
         updateState()
     }
 
-    func updateSelectedPhoto(at index: Int) {
-        if case let .image(original, _, _) = model.transformedPhotos[index] {
+    func updateSelectedPhoto(with uuid: UUID) {
+        if case let .image(original, _, _) = model.transformedPhotos.first(where: { $0.uuid == uuid }) {
             model.selectedPhoto = original
             Task {
                 try await self.storage.save(selectedPhoto: self.model.selectedPhoto)
@@ -64,40 +73,43 @@ class ContentViewStore: ObservableObject {
 
     func rotate() {
         guard let photo = model.selectedPhoto else { return }
+        let uuid = UUID()
         let index = model.transformedPhotos.endIndex
-        model.transformedPhotos.append(.processing(percent: 0))
+        model.transformedPhotos.append(.processing(percent: 0, uuid: uuid))
 
         Task {
             let rotated = try await self.imageProcessor.rotate(photo) { @MainActor percent in
                 var model = self.model
-                model.transformedPhotos[index] = .processing(percent: percent)
+                model.transformedPhotos[index] = .processing(percent: percent, uuid: uuid)
                 self.model = model
             }
             let thumbnail = try await self.imageProcessor.generateThumbnail(rotated)
+            print(uuid)
             self.model.transformedPhotos[index] = .image(
                 original: rotated,
                 thumbnail: thumbnail,
-                uuid: UUID()
+                uuid: uuid
             )
         }
     }
 
     func invertColors() {
         guard let photo = model.selectedPhoto else { return }
+        let uuid = UUID()
         let index = model.transformedPhotos.endIndex
-        model.transformedPhotos.append(.processing(percent: 0))
+        model.transformedPhotos.append(.processing(percent: 0, uuid: uuid))
 
         Task {
             let invertedImage = try await self.imageProcessor.invertColors(photo) { @MainActor percent in
                 var model = self.model
-                model.transformedPhotos[index] = .processing(percent: percent)
+                model.transformedPhotos[index] = .processing(percent: percent, uuid: uuid)
                 self.model = model
             }
             let thumbnail = try await self.imageProcessor.generateThumbnail(invertedImage)
             self.model.transformedPhotos[index] = .image(
                 original: invertedImage,
                 thumbnail: thumbnail,
-                uuid: UUID()
+                uuid: uuid
             )
         }
     }
@@ -107,15 +119,18 @@ class ContentViewStore: ObservableObject {
             selectedPhoto: model.selectedPhoto,
             transformedPhotos: model.transformedPhotos.enumerated().map { index, item in
                 let photo: ContentViewState.TransformedPhoto.Content
+                let uuid: UUID
                 switch item {
-                case let .image(_, thumbnail, _):
+                case let .image(_, thumbnail, _uuid):
                     photo = .image(thumbnail)
-                case .processing(let percent):
+                    uuid = _uuid
+                case let .processing(percent, _uuid):
                     photo = .processing(percent)
+                    uuid = _uuid
                 }
                 return ContentViewState.TransformedPhoto(
                     content: photo,
-                    id: index
+                    id: uuid
                 )
             }.reversed()
         )

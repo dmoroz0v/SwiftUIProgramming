@@ -11,7 +11,7 @@ import SwiftUI
 
 struct DetailsView: View {
     @ObservedObject var store: ContentViewStore
-    var photoId: Int
+    var photoId: UUID
     var doneAction: () -> Void
     var body: some View {
         VStack {
